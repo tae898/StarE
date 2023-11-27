@@ -133,7 +133,7 @@ class DataManager(object):
         :return: np array of entities NOT appearing in range(n_ents)
         """
 
-        appeared = np.zeros(n_ents, dtype=np.int)
+        appeared = np.zeros(n_ents, dtype=int)
         for datum in data:
             for pos in positions:
                 appeared[datum[pos]] = 1

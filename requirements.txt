@@ -1,7 +1,6 @@
-torch==1.5.1
-torch-geometric==1.6.1
-torch-scatter==2.0.5
-torch-sparse==0.6.7
-torch-spline-conv==1.2.0
-tqdm
-wandb
+numpy==1.26.2
+torch==2.1.1
+torch-scatter==2.1.2
+torch_geometric==2.4.0
+tqdm>=4.66.1
+wandb>=0.16.0

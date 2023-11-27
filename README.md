@@ -30,10 +30,10 @@ StarE encodes hyper-relational fact by first passing Qualifier pairs through a c
  The resulting vector is then merged via <img src="https://render.githubusercontent.com/render/math?math=\gamma">, and <img src="https://render.githubusercontent.com/render/math?math=\phi_r"> with the relation and object vector, respectively. Finally, node **Q937** aggregates messages from this and other hyper-relational edges. Please refer to the paper for details.
 
 ## Requirements
-* Python 3.7
-* PyTorch 1.5.1
-* torch-geometric 1.6.1
-* torch-scatter 2.0.5
+* Python>=3.10
+* PyTorch 2.1.1
+* torch-geometric 2.4.0
+* torch-scatter 2.1.2
 * tqdm
 * wandb
 
@@ -72,6 +72,7 @@ Specified as `DATASET` in the running script
 It is advised to run experiments on a GPU otherwise training might take long.
 Use `DEVICE cuda` to turn on GPU support, default is `cpu`.
 Don't forget to specify `CUDA_VISIBLE_DEVICES` before `python` if you use `cuda`
+Currently tested on `cuda==12.1`
 
 Three parameters control triple/hyper-relational nature and max fact length:
 * `STATEMENT_LEN`: `-1` for hyper-relational [default], `3` for triples
