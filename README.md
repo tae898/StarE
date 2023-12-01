@@ -30,7 +30,7 @@ StarE encodes hyper-relational fact by first passing Qualifier pairs through a c
  The resulting vector is then merged via <img src="https://render.githubusercontent.com/render/math?math=\gamma">, and <img src="https://render.githubusercontent.com/render/math?math=\phi_r"> with the relation and object vector, respectively. Finally, node **Q937** aggregates messages from this and other hyper-relational edges. Please refer to the paper for details.
 
 ## Requirements
-* Python>=3.10
+* Python>=3.9
 * PyTorch 2.1.1
 * torch-geometric 2.4.0
 * torch-scatter 2.1.2
