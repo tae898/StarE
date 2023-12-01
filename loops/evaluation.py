@@ -85,7 +85,7 @@ class EvaluationBenchGNNMultiClass:
         for each line we search in the index for the correct label and assign 1 in the resulting vector
         """
         # statement shape for correct processing of the very last batch which size might be less than self.bs
-        y = np.zeros((statements.shape[0], self.config['NUM_ENTITIES']), dtype=np.float32)
+        y = np.zeros((statements.shape[0], self.config['NUM_ENTITIES']), dtype=float)
 
 
         for i, s in enumerate(statements):
@@ -99,7 +99,7 @@ class EvaluationBenchGNNMultiClass:
         """ Call when you wanna run again but not change hashes etc """
         raise NotImplementedError
 
-    def _compute_metric_(self, scores: np.array) -> List[Union[float, np.float]]:
+    def _compute_metric_(self, scores: np.array) -> List[Union[float, float]]:
         """ See what metrics are to be computed, and compute them."""
         return [_metric(scores) for _metric in self.metrics]
 
@@ -242,19 +242,19 @@ class EvaluationBenchGNNMultiClass:
         return summary
 
 
-def acc(scores: torch.Tensor) -> np.float:
+def acc(scores: torch.Tensor) -> float:
     """ Accepts a (n, ) tensor """
     return (torch.argmin(scores, dim=0) == 0).float().detach().cpu().numpy().item()
 
 
-def mrr(scores: torch.Tensor) -> np.float:
+def mrr(scores: torch.Tensor) -> float:
     """ Tested | Accepts one (n,) tensor """
     ranks = (torch.argsort(scores, dim=0) == 0).nonzero()[0]
     recirank = 1.0 / (ranks + 1).float()
     return recirank.detach().cpu().numpy().item()
 
 
-def mr(scores: torch.Tensor) -> np.float:
+def mr(scores: torch.Tensor) -> float:
     """ Tested | Accepts one (n,) tensor """
     ranks = (torch.argsort(scores, dim=0) == 0).nonzero()[0]
     ranks += 1
