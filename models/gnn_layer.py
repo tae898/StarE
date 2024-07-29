@@ -16,30 +16,31 @@ class StarEConvLayer(MessagePassing):
                                              aggr='add')
 
         self.p = config
-        self.in_channels = in_channels
-        self.out_channels = out_channels
-        self.num_rels = num_rels
-        self.act = act
+        self.in_channels = in_channels  # 200
+        self.out_channels = out_channels  # 200
+        self.num_rels = num_rels  # 532
+        self.act = act  # <built-in method tanh of type object at 0x773d49269a40>
         self.device = None
 
-        self.w_loop = get_param((in_channels, out_channels))  # (100,200)
-        self.w_in = get_param((in_channels, out_channels))  # (100,200)
-        self.w_out = get_param((in_channels, out_channels))  # (100,200)
-        self.w_rel = get_param((in_channels, out_channels))  # (100,200)
+        self.w_loop = get_param((in_channels, out_channels))  # (200,200)
+        self.w_in = get_param((in_channels, out_channels))  # (200,200)
+        self.w_out = get_param((in_channels, out_channels))  # (200,200)
+        self.w_rel = get_param((in_channels, out_channels))  # (200,200)
 
         if self.p['STATEMENT_LEN'] != 3:
             if self.p['STAREARGS']['QUAL_AGGREGATE'] == 'sum' or self.p['STAREARGS']['QUAL_AGGREGATE'] == 'mul':
+                # TAE: HERE
                 self.w_q = get_param((in_channels, in_channels))  # new for quals setup
             elif self.p['STAREARGS']['QUAL_AGGREGATE'] == 'concat':
                 self.w_q = get_param((2 * in_channels, in_channels))  # need 2x size due to the concat operation
 
-        self.loop_rel = get_param((1, in_channels))  # (1,100)
+        self.loop_rel = get_param((1, in_channels))  # (1,200)
         self.loop_ent = get_param((1, in_channels))  # new
 
         self.drop = torch.nn.Dropout(self.p['STAREARGS']['GCN_DROP'])
         self.bn = torch.nn.BatchNorm1d(out_channels)
 
-        if self.p['STAREARGS']['ATTENTION']:
+        if self.p['STAREARGS']['ATTENTION']:  # This is FALSE
             assert self.p['STAREARGS']['GCN_DIM'] == self.p['EMBEDDING_DIM'], "Current attn implementation requires those tto be identical"
             assert self.p['EMBEDDING_DIM'] % self.p['STAREARGS']['ATTENTION_HEADS'] == 0, "should be divisible"
             self.heads = self.p['STAREARGS']['ATTENTION_HEADS']
@@ -49,7 +50,7 @@ class StarEConvLayer(MessagePassing):
             self.att = get_param((1, self.heads, 2 * self.attn_dim))
 
         if self.p['STAREARGS']['BIAS']: self.register_parameter('bias', Parameter(
-            torch.zeros(out_channels)))
+            torch.zeros(out_channels)))  # Also FALSE
 
     def forward(self, x, edge_index, edge_type, rel_embed,
                 qualifier_ent=None, qualifier_rel=None, quals=None):
@@ -105,8 +106,56 @@ class StarEConvLayer(MessagePassing):
         Note that qr1,qr2... and qe1, qe2, ... all belong to the same space
         :return:
         """
+
+        """TAE:
+        >>> x.shape
+        torch.Size([47156, 200])
+
+        >>> edge_index.shape
+        torch.Size([2, 380696])
+
+        >>> edge_type.min()
+        tensor(1)
+        >>> edge_type.max()
+        tensor(1063)        
+        >>> edge_type.shape
+        torch.Size([380696])
+        >>> len(set(Counter(edge_type.tolist()).keys()))
+        972
+
+        >>> rel_embed.shape
+        torch.Size([1064, 200])
+
+        >>> qualifier_ent
+        None
+
+        >>> qualifier_rel
+        None
+
+        >>> quals.shape
+        torch.Size([3, 74866])
+        """
+
+        # Save torch objects
+        # torch.save(x.detach().cpu(), 'x.pt')
+        # torch.save(edge_index.detach().cpu(), 'edge_index.pt')
+        # torch.save(edge_type.detach().cpu(), 'edge_type.pt')
+        # torch.save(rel_embed.detach().cpu(), 'rel_embed.pt')
+        # torch.save(quals.detach().cpu(), 'quals.pt')
+
+
+
         if self.device is None:
             self.device = edge_index.device
+
+        """
+        >>> rel_embed.shape
+        torch.Size([1065, 200])
+        >>> self.w_rel.shape
+        torch.Size([200, 200])
+        >>> self.loop_rel.shape
+        torch.Size([1, 200])        
+        """
 
         rel_embed = torch.cat([rel_embed, self.loop_rel], dim=0)
         num_edges = edge_index.size(1) // 2
@@ -179,9 +228,16 @@ class StarEConvLayer(MessagePassing):
 
         out = self.drop(in_res) * (1 / 3) + self.drop(out_res) * (1 / 3) + loop_res * (1 / 3)
 
-        if self.p['STAREARGS']['BIAS']:
+        if self.p['STAREARGS']['BIAS']:  # False
             out = out + self.bias
-        out = self.bn(out)
+        out = self.bn(out)  # out.shape = torch.Size([47156, 200])
+
+        """TAE:
+        >>> torch.matmul(rel_embed, self.w_rel).shape
+        torch.Size([1065, 200])        
+        >>> torch.matmul(rel_embed, self.w_rel)[:-1].shape
+        torch.Size([1064, 200])
+        """
 
         # Ignoring the self loop inserted, return.
         return self.act(out), torch.matmul(rel_embed, self.w_rel)[:-1]

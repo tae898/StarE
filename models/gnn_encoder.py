@@ -35,6 +35,11 @@ class StarEBase(torch.nn.Module):
 class StarEEncoder(StarEBase):
     def __init__(self, graph_repr: Dict[str, np.ndarray], config: dict, timestamps: dict = None):
         super().__init__(config)
+        
+        """TAE:
+        >>> timestamps
+        None
+        """
 
         self.device = config['DEVICE']
 
@@ -47,24 +52,37 @@ class StarEEncoder(StarEBase):
                 self.qual_rel = torch.tensor(graph_repr['qual_rel'], dtype=torch.long, device=self.device)
                 self.qual_ent = torch.tensor(graph_repr['qual_ent'], dtype=torch.long, device=self.device)
             elif self.qual_mode == "sparse":
+                # TAE: HERE
                 self.quals = torch.tensor(graph_repr['quals'], dtype=torch.long, device=self.device)
 
         self.gcn_dim = self.emb_dim if self.n_layer == 1 else self.gcn_dim
+        # TAE: self.gcn_dim = 200
 
         if timestamps is None:
             self.init_embed = get_param((self.num_ent, self.emb_dim))
+            # TAE: self.init_embed.shape = torch.Size([47156, 200])
+            # The authors use `get_param` to initialize the embeddings. This is a custom 
+            # function that initializes the embeddings with a xavier_normal distribution.
             self.init_embed.data[0] = 0  # padding
-
-
+            # Access the data of the tensor. This is the actual data that the tensor holds.
+            # The shape of the tensor is (47156, 200). The first element of the first
+            # row is set to 0. I actually don't know what this is for. It must be some
+            # kind of a place holder?
 
         if self.model_nm.endswith('transe'):
             self.init_rel = get_param((self.num_rel, self.emb_dim))
         elif config['STAREARGS']['OPN'] == 'rotate' or config['STAREARGS']['QUAL_OPN'] == 'rotate':
+            # TAE: HERE
             phases = 2 * np.pi * torch.rand(self.num_rel, self.emb_dim // 2)
             self.init_rel = nn.Parameter(torch.cat([
                 torch.cat([torch.cos(phases), torch.sin(phases)], dim=-1),
                 torch.cat([torch.cos(phases), -torch.sin(phases)], dim=-1)
             ], dim=0))
+            # phases.shape = torch.Size([532, 100])
+            # self.init_rel.shape = torch.Size([1064, 100])
+            # The embedding dimension for the relations is 100, which is half of the 
+            # entity embedding dimension. Why?
+
         else:
             self.init_rel = get_param((self.num_rel * 2, self.emb_dim))
 
@@ -79,6 +97,8 @@ class StarEEncoder(StarEBase):
         if self.conv2: self.conv2.to(self.device)
 
         self.register_parameter('bias', Parameter(torch.zeros(self.num_ent)))
+        # Parameter(torch.zeros(self.num_ent)).shape
+        # torch.Size([47156])
 
     def forward_base(self, sub, rel, drop1, drop2,
                      quals=None, embed_qualifiers: bool = False, return_mask: bool = False):
@@ -111,6 +131,7 @@ class StarEEncoder(StarEBase):
                                   qualifier_rel=self.qual_rel,
                                   quals=None) if self.n_layer == 2 else (x, r)
             elif self.qual_mode == "sparse":
+                # TAE: HERE
                 # x, edge_index, edge_type, rel_embed, qual_ent, qual_rel
                 x, r = self.conv1(x=self.init_embed, edge_index=self.edge_index,
                                   edge_type=self.edge_type, rel_embed=r,
@@ -141,6 +162,7 @@ class StarEEncoder(StarEBase):
         rel_emb = torch.index_select(r, 0, rel)
 
         if embed_qualifiers:
+            # TAE: HERE
             assert quals is not None, "Expected a tensor as quals."
             # flatten quals
             quals_ents = quals[:, 1::2].view(1,-1).squeeze(0)
@@ -153,13 +175,16 @@ class StarEEncoder(StarEBase):
             if not return_mask:
                 return sub_emb, rel_emb, qual_obj_emb, qual_rel_emb, x
             else:
+                # TAE: HERE
                 # mask which shows which entities were padded - for future purposes, True means to mask (in transformer)
                 # https://github.com/pytorch/pytorch/blob/master/torch/nn/functional.py : 3770
                 # so we first initialize with False
                 mask = torch.zeros((sub.shape[0], quals.shape[1] + 2)).bool().to(self.device)
                 # and put True where qual entities and relations are actually padding index 0
                 mask[:, 2:] = quals == 0
+
                 return sub_emb, rel_emb, qual_obj_emb, qual_rel_emb, x, mask
+
 
         return sub_emb, rel_emb, x
 

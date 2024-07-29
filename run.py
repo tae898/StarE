@@ -260,6 +260,7 @@ if __name__ == "__main__":
                 if 'objectmask' in config['MODEL_NAME']:
                     model = StarE_ObjectMask_Transformer(train_data_gcn, config)
                 else:
+                    # TAE: This is the one we're using
                     model = StarE_Transformer(train_data_gcn, config)
             else:
                 model = StarE_Transformer_Triples(train_data_gcn, config)

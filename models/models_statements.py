@@ -17,6 +17,38 @@ class StarE_Transformer(StarEEncoder):
         else:
             super(self.__class__, self).__init__(kg_graph_repr, config)
 
+        """TAE:
+        >>> kg_graph_repr.keys()
+        dict_keys(['edge_index', 'edge_type', 'quals'])
+
+        >>> kg_graph_repr["edge_index"].shape
+        (2, 380696)
+
+        >>> kg_graph_repr["edge_type"].shape
+        (380696,)
+
+        >>> kg_graph_repr["quals"].shape
+        (3, 74866)
+
+        >>> config
+        {'BATCH_SIZE': 128, 'DATASET': 'wd50k', 'DEVICE': device(type='cpu'), 'EMBEDDING_DIM':
+        200, 'ENT_POS_FILTERED': True, 'EPOCHS': 401, 'EVAL_EVERY': 5, 'LEARNING_RATE': 0.0001,
+        'MAX_QPAIRS': 15, 'MODEL_NAME': 'stare_transformer', 'CORRUPTION_POSITIONS': [0, 2],
+        'SAVE': False, 'STATEMENT_LEN': -1, 'USE_TEST': True, 'WANDB': False, 'LABEL_SMOOTHING':
+        0.1, 'SAMPLER_W_QUALIFIERS': True, 'OPTIMIZER': 'adam', 'CLEANED_DATASET': True,
+        'GRAD_CLIPPING': True, 'LR_SCHEDULER': True, 'STAREARGS': {'LAYERS': 2, 'N_BASES': 0,
+        'GCN_DIM': 200, 'GCN_DROP': 0.1, 'HID_DROP': 0.3, 'BIAS': False, 'OPN': 'rotate',
+        'TRIPLE_QUAL_WEIGHT': 0.8, 'QUAL_AGGREGATE': 'sum', 'QUAL_OPN': 'rotate', 'QUAL_N':
+        'sum', 'SUBBATCH': 0, 'QUAL_REPR': 'sparse', 'ATTENTION': False, 'ATTENTION_HEADS': 4,
+        'ATTENTION_SLOPE': 0.2, 'ATTENTION_DROP': 0.1, 'HID_DROP2': 0.1, 'FEAT_DROP': 0.3,
+        'N_FILTERS': 200, 'KERNEL_SZ': 7, 'K_W': 10, 'K_H': 20, 'T_LAYERS': 2, 'T_N_HEADS': 4,
+        'T_HIDDEN': 512, 'POSITIONAL': True, 'POS_OPTION': 'default', 'TIME': False, 'POOLING':
+        'avg'}, 'NUM_ENTITIES': 47156, 'NUM_RELATIONS': 532}        
+
+        >>> id2e
+        None
+        """
+    
         self.model_name = 'StarE_Transformer_Statement'
         self.hid_drop2 = config['STAREARGS']['HID_DROP2']
         self.feat_drop = config['STAREARGS']['FEAT_DROP']
